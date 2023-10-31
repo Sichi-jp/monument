@@ -1,0 +1,42 @@
+body{
+    margin: 0;
+}
+
+h1 {
+    font-size: 30px;
+}
+
+#topic{
+    text-align: center;
+    margin: 20px;
+}
+
+#topic h1{
+    font-size: 30px;
+}
+
+#topic p{
+    font-size: 20px;
+}
+
+#monument{
+    margin: 20px;
+}
+
+#monument p {
+    font-size: 20px;
+    text-align: center;
+}
+
+.stele{
+    padding: 20px;
+    color: #dddddd;
+}
+
+.name{
+    font-size: 10px;
+}
+
+.content{
+    font-size: 20px;
+}

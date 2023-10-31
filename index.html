@@ -1,0 +1,257 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Monument</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" type="text/css" href="./static/css/index.css"/>
+    <link rel="stylesheet" type="text/css" href="./static/css/nav.css"/>
+
+    <script
+    src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+    crossorigin="anonymous"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <script src="
+    https://cdn.jsdelivr.net/npm/web3@4.1.1/dist/web3.min.js
+    "></script>
+
+</head>
+
+<body>
+  <header>
+    <nav id="g-navi">
+      <ul>
+        <li><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postModal">投稿</button></li>
+        <li><button id="mypost">自分の投稿を見る</button></li>
+        <li><button id="orderFirst">投稿順にする</button></li>
+      </ul>
+    </nav>
+    <div class="openbtn" draggable="true"><span></span><span></span><span></span></div>
+  </header>
+    <main>
+      <div id="topic">
+        <h1>あなたはこの世界に何を残しますか？</h1>
+        <p>ここにあなたの生きた証を残すことができます。</p>
+        <p>誰も検閲や削除ができません。</p>
+      </div>
+      <div id="monument">
+      </div>
+    </main>
+
+    <!--Modal-->
+    <div class="modal fade" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="postModalLabel">投稿</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3">
+                <label for="name" class="col-form-label">投稿名:</label>
+                <input type="text" class="form-control" id="name">
+              </div>
+              <div class="mb-3">
+                <label for="content" class="col-form-label">内容:</label>
+                <textarea class="form-control" id="content" rows="4"></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="postBtn" type="button" class="btn btn-primary">Send message</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function contentAdd(){
+        var name = $('#name').val().toString();
+        var content = $('#content').val().toString();
+        console.log(name);
+        console.log(content);
+
+        const data = contract.methods.writeStele(name, content).encodeABI();
+        
+        const gasEstimate = await web3.eth.estimateGas({
+          to: contractAddress,
+          data: data
+        });
+
+        // トランザクションオブジェクト
+        const txObject = {
+          from: yourAddress[0],
+          to: contractAddress,
+          data: data, // エンコードされた引数
+          gas: gasEstimate, // ガスリミット
+        };
+
+        // トランザクションの送信
+        return web3.eth.sendTransaction(txObject, function(error, hash) {
+          if (!error) {
+            console.log("Transaction Hash: " + hash);
+            window.alert("投稿されました！ページを再読込してください。")
+          } else {
+            console.error(error);
+          }
+        });
+      }
+
+      async function myPosts(){
+        $('#monument').children().remove();
+        return window.contract.methods.getWriteAddress().call({ from: yourAddress[0]})
+        .then(function(result){
+          console.log(result);
+          if(result.length == 0){
+            $('#monument').append(`
+            <div class="card">
+              <div class="card-body">
+                <p class="card-text">投稿はありません</p>
+              </div>
+            </div>
+            `); 
+          } else {
+            result.forEach(element => {
+            return window.contract.methods.steles(element).call()
+            .then(function(result){
+              $('#monument').prepend(`
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">${result[1]}</h5>
+                    <p class="card-text">${result[2]}</p>
+                  </div>
+                </div>
+              `); 
+            }).catch(function(err){
+              console.log(err);
+            });
+            });
+          }
+        }).catch(function(err){
+          console.log(err);
+        });
+      }
+
+      async function orderFirst(){
+        $('#monument').children().remove();
+        return window.contract.methods.getTotalSteles().call()
+        .then(function(result){
+          if(result == 0){
+            $('#monument').append(`
+            <div class="card">
+              <div class="card-body">
+                <p class="card-text">投稿はありません</p>
+              </div>
+            </div>
+            `); 
+          } else{
+          for(i = 0; i < result; i++){
+            window.contract.methods.steles(i).call()
+            .then(function(result){
+              $('#monument').prepend(`
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">${result[1]}</h5>
+                    <p class="card-text">${result[2]}</p>
+                  </div>
+                </div>
+              `); 
+            }).catch(function(err){
+              console.log(err);
+            });
+          }
+        }
+      }).catch(function(err){
+        console.log(err);
+      });
+      }
+
+      let postbtn = document.getElementById('postBtn');
+      postbtn.addEventListener('click', contentAdd);
+
+      let mypostsbtn = document.getElementById('mypost');
+      mypostsbtn.addEventListener('click', myPosts);
+
+      let orderfirstBtn = document.getElementById('orderFirst');
+      orderfirstBtn.addEventListener('click', orderFirst);
+
+      let abi;
+      const contractAddress = '0x4fc1c112443c55efd0d69fbb947e01d08a07bf98';
+      let yourAddress;
+
+    async function startDapp(){
+      let provider = window.ethereum;
+      if (provider) {
+        yourAddress = await provider.request({ method: "eth_requestAccounts" });
+        this.web3 = new Web3(provider);
+        this.contract = new this.web3.eth.Contract(abi, contractAddress);
+      }
+      FirstSteles();
+    }
+
+    function FirstSteles(){
+      return window.contract.methods.getTotalSteles().call()
+      .then(function(result){
+        if(Number(result) == 0){
+          $('#monument').append(`
+            <div class="card">
+              <div class="card-body">
+                <p class="card-text">投稿はありません</p>
+              </div>
+            </div>
+          `); 
+        } else{
+          var count = Number(result) - 1;
+          for(i = count; i >= 0; i--){
+            window.contract.methods.steles(i).call()
+            .then(function(result){
+              console.log(result);
+              console.log(result[0]);
+              console.log(result[1]);
+              $('#monument').prepend(`
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">${result[1]}</h5>
+                    <p class="card-text">${result[2]}</p>
+                  </div>
+                </div>
+              `); 
+            }).catch(function(err){
+              console.log(err);
+            });
+          }
+        }
+      }).catch(function(err){
+        console.log(err);
+      });
+    }
+
+    window.addEventListener('load', function() {
+      if (typeof window.ethereum !== 'undefined') {            
+        $.getJSON("./static/abi_monument.json", (data) => {
+          abi = data;
+        });
+        startDapp();
+      }else{
+        window.alert("MetaMaskなどのブラウザから利用できるウォレットをインストールしてください。")
+      }
+    });
+
+    $(".openbtn").click(function(){
+      $(this).toggleClass('active');
+      $("#g-navi").toggleClass('panelactive');
+    });
+
+    $("#g-navi button").click(function(){
+      $(".openbtn").removeClass('active');
+      $("#g-navi").removeClass('panelactive');
+    });
+    </script>
+</body>
+</html>
