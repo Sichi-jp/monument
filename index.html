@@ -74,8 +74,6 @@
       async function contentAdd(){
         var name = $('#name').val().toString();
         var content = $('#content').val().toString();
-        console.log(name);
-        console.log(content);
 
         const data = contract.methods.writeStele(name, content).encodeABI();
         
@@ -107,7 +105,6 @@
         $('#monument').children().remove();
         return window.contract.methods.getWriteAddress().call({ from: yourAddress[0]})
         .then(function(result){
-          console.log(result);
           if(result.length == 0){
             $('#monument').append(`
             <div class="card">
@@ -211,9 +208,6 @@
           for(i = count; i >= 0; i--){
             window.contract.methods.steles(i).call()
             .then(function(result){
-              console.log(result);
-              console.log(result[0]);
-              console.log(result[1]);
               $('#monument').prepend(`
                 <div class="card">
                   <div class="card-body">
